@@ -30,26 +30,26 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 
-app.get('/', (req, res) => {
+app.get('/', checkAuthenticated,(req, res) => {
   res.render('index.ejs', {name: req.user.name})
 });
 
-app.get('/login', (req, res) => {
+app.get('/login', checkNotAuthenticated, (req, res) => {
   res.render('login.ejs')
 });
 
 //use passport authentication for login
-app.post('/login', passport.authenticate('local', {
+app.post('/login', checkNotAuthenticated, passport.authenticate('local', {
   successRedirect: '/', //go to home page for successful login
   failureRedirect: '/login', //go back to login for unsuccessful login
   failureFlash: true
 }));
 
-app.get('/register', (req, res) => {
+app.get('/register', checkNotAuthenticated, (req, res) => {
   res.render('register.ejs')
 });
 
-app.post('/register', async (req, res) => {
+app.post('/register', checkNotAuthenticated, async (req, res) => {
   try {
     const hashedPassword = await bcrypt.hash(req.body.password, 10)
     users.push({
@@ -64,6 +64,21 @@ app.post('/register', async (req, res) => {
   }
   console.log(users);
 });
+
+
+function checkAuthenticated(req, res, next){ //if user is not authenticated, need to go to login page
+  if (req.isAuthenticated()) { // //part of passport API: returns true or false
+    return next();
+  }
+  res.redirect('/login')
+}
+
+function checkNotAuthenticated(req, res, next){ //if authenticated user, don't go to login page
+  if(req.isAuthenticated()) { //part of passport API
+    return res.redirect('/')
+  }
+  next();
+}
 
 app.listen(3000, () => {
   console.log('app listening on localhost:3000')
